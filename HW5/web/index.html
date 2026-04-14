@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HW5: Diffusion Models and Flow Matching</title>
+<title>Diffusion Models and Flow Matching</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
@@ -513,7 +513,7 @@
   .img-card .img-placeholder img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: fill;
     position: absolute;
     inset: 0;
     z-index: 1;
@@ -523,11 +523,11 @@
   .img-card picture img {
     width: 100%;
     aspect-ratio: 1;
-    object-fit: cover;
+    object-fit: fill;
   }
 
   .img-caption {
-    padding: 10px 14px;
+    padding: 4px 8px;
     font-family: 'DM Mono', monospace;
     font-size: 10px;
     letter-spacing: 0.08em;
@@ -562,14 +562,14 @@
   .img-card.small img {
     width: 64px;
     height: 64px;
-    object-fit: cover;
+    object-fit: fill;
     display: block;
   }
 
   .img-card.large img {
     width: 256px;
     height: 256px;
-    object-fit: cover;
+    object-fit: fill;
     display: block;
   }
 
@@ -596,6 +596,141 @@
       height: 220px;
     }
   }
+
+  /* Wrapper for stacking images */
+  .hover-swap .img-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+  }
+
+  /* Both images stacked */
+  .hover-swap img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    transition: opacity 1.2s ease;
+  }
+
+  /* Initial state */
+  .hover-swap .img-front { opacity: 1; }
+  .hover-swap .img-back  { opacity: 0; }
+
+  /* Hover swap */
+  .hover-swap:hover .img-front { opacity: 0; }
+  .hover-swap:hover .img-back  { opacity: 1; }
+
+  /* CAPTION FADE */
+  .hover-swap .img-caption {
+    position: relative;
+  }
+
+  /* Take captions out of normal flow but preserve space */
+  .hover-swap .img-caption span {
+    display: block;
+    transition: opacity 1.2s ease;
+  }
+
+  /* Stack using grid instead of absolute positioning */
+  .hover-swap .img-caption {
+    display: grid;
+  }
+
+  .hover-swap .img-caption span {
+    grid-area: 1 / 1;
+  }
+
+  /* Initial caption */
+  .hover-swap .caption-front { opacity: 1; }
+  .hover-swap .caption-back  { opacity: 0; }
+
+  /* Hover caption swap */
+  .hover-swap:hover .caption-front { opacity: 0; }
+  .hover-swap:hover .caption-back  { opacity: 1; }
+
+  /* IMAGE ROTATION */
+  .hover-rotate .img-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    transition: transform 1.2s ease;
+    transform-style: preserve-3d;
+  }
+
+  .hover-rotate:hover .img-wrapper {
+    transform: rotate(180deg); /* tweak angle if you want */
+  }
+
+  /* OPTIONAL: smoother feel */
+  .hover-rotate img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: fill;
+    display: block;
+  }
+
+  /* CAPTION STACK (GRID METHOD — no layout issues) */
+  .hover-rotate .img-caption {
+    display: grid;
+    margin-top: 8px;
+  }
+
+  /* Stack both captions */
+  .hover-rotate .img-caption span {
+    grid-area: 1 / 1;
+    text-align: center;
+    transition: opacity 1.2s ease;
+  }
+
+  /* Initial state */
+  .hover-rotate .caption-front { opacity: 1; }
+  .hover-rotate .caption-back  { opacity: 0; }
+
+  /* On hover: fade swap */
+  .hover-rotate:hover .caption-front { opacity: 0; }
+  .hover-rotate:hover .caption-back  { opacity: 1; }
+
+  /* IMAGE DOWNSCALE */
+  .hover-scale-down .img-wrapper {
+    overflow: hidden;
+    background: var(--surface2); /* helps reveal shrink */
+  }
+
+  .hover-scale-down img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+    transition: transform 1.2s ease, opacity 0.4s ease;
+  }
+
+  .hover-scale-down:hover img {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+
+  /* CAPTION CROSSFADE (GRID STACK — NO POSITION ISSUES) */
+  .hover-scale-down .img-caption {
+    display: grid;
+    margin-top: 8px;
+  }
+
+  .hover-scale-down .img-caption span {
+    grid-area: 1 / 1;
+    text-align: center;
+    transition: opacity 1.2s ease;
+  }
+
+  /* Initial state */
+  .hover-scale-down .caption-front { opacity: 1; }
+  .hover-scale-down .caption-back  { opacity: 0; }
+
+  /* On hover */
+  .hover-scale-down:hover .caption-front { opacity: 0; }
+  .hover-scale-down:hover .caption-back  { opacity: 1; }
 
   /* ─── WIDE GRID (for 5/6 col) ─── */
 
@@ -802,6 +937,56 @@
   .algo-block code .kw { color: var(--accent2); }
   .algo-block code .var { color: var(--accent); }
   .algo-block code .cmt { color: var(--text-dim); font-style: italic; }
+
+  /* INTERACTIVE BACKGROUND LAYER */
+  .header-interactive {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none; /* IMPORTANT */
+  }
+
+  /* Allow interaction ONLY on items */
+  .header-interactive .bg-item {
+    position: absolute;
+    width: 120px;
+    pointer-events: auto;
+    opacity: 0.85;
+  }
+
+  /* Position each item artistically */
+  .item-1 {
+    top: 20%;
+    left: 10%;
+  }
+
+  .item-2 {
+    top: 60%;
+    left: 85%;
+  }
+
+  .item-3 {
+    top: 10%;
+    right: 15%;
+  }
+
+  /* Make them feel subtle in background */
+  .header-interactive .img-card {
+    transform: scale(0.9);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  .header-interactive .img-card:hover {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  /* Ensure header content stays above */
+  header > *:not(.header-bg):not(.header-grid):not(.header-interactive):not(.scroll-hint) {
+    position: relative;
+    z-index: 2;
+  }
+
 </style>
 </head>
 <body>
@@ -813,13 +998,56 @@
 <header>
   <div class="header-bg"></div>
   <div class="header-grid"></div>
+
+  <!-- NEW: interactive background layer -->
+  <div class="header-interactive">
+    
+    <!-- 1. IMAGE FADE SWAP -->
+    <div class="img-card hover-swap bg-item item-1">
+      <div class="img-wrapper">
+        <img src="assets/alma.jpg" class="img-front">
+        <img src="assets/alma_queen.png" class="img-back">
+      </div>
+      <div class="img-caption">
+        <span class="caption-front">"Turn her into a queen"</span>
+        <span class="caption-back">"Turn her into a queen"</span>
+      </div>
+    </div>
+
+    <!-- 2. ROTATE -->
+    <div class="img-card hover-rotate bg-item item-2">
+      <div class="img-wrapper">
+        <img src="assets/bear_mountain.png">
+      </div>
+      <div class="img-caption">
+        <span class="caption-front">Mountain Range</span>
+        <span class="caption-back">Sleeping Bear</span>
+      </div>
+    </div>
+
+    <!-- 3. SCALE DOWN -->
+    <div class="img-card hover-scale-down bg-item item-3">
+      <div class="img-wrapper">
+        <img src="assets/yinyang_rome.png">
+      </div>
+      <div class="img-caption">
+        <span class="caption-front">City of Rome</span>
+        <span class="caption-back">Yin Yang</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EXISTING CONTENT -->
   <div class="course-tag">COMS 4732W &nbsp;·&nbsp; Computer Vision 2 &nbsp;·&nbsp; Homework 5</div>
   <h1>Diffusion Models<br><em>& Flow Matching</em></h1>
+
   <div class="header-meta">
     <div class="meta-item">Author: <span>Aditya Handur-Kulkarni (UNI:ash2285)</span></div>
     <br>
-    <div class="meta-item">Source: <span><a href="https://www.github.com" target="_blank">GitHub Link</a></span></div>
+    <div class="meta-item">Source: <span><a href="https://github.com/adikul3007/coms4732-cv2-assignments/tree/main/HW5/code" target="_blank">GitHub Link</a></span></div>
   </div>
+
   <a class="scroll-hint" href="#parta">↓ &nbsp; scroll to explore</a>
 </header>
 
@@ -1536,7 +1764,7 @@
       </div>
     </div>
 
-    <h3>Custom Image 1 (artemis.jpg)</h3>
+    <h3>Custom Image 1 - The Artemis Rocket</h3>
     <div class="img-grid cols-7">
       <div class="img-card">
         <img src="assets/artemis_sdedit1.png">
@@ -1568,7 +1796,7 @@
       </div>
     </div>
 
-    <h3>Custom Image 2 (cube.jpg)</h3>
+    <h3>Custom Image 2 - A Rubik's Cube</h3>
     <div class="img-grid cols-7">
       <div class="img-card">
         <img src="assets/cube_sdedit1.png">
@@ -1780,9 +2008,16 @@
         <img src="assets/campanile_replace.png">
         <div class="img-caption">Hole to Fill</div>
       </div>
-      <div class="img-card">
-        <img src="assets/campanile_inpaint.png">
-        <div class="img-caption">Campanile Inpainted</div>
+      <div class="img-card hover-swap">
+        <div class="img-wrapper">
+          <img src="assets/campanile.jpg" class="img-front">
+          <img src="assets/campanile_inpaint.png" class="img-back">
+        </div>
+
+        <div class="img-caption">
+          <span class="caption-front">Original<br>(Hover over me!)</span>
+          <span class="caption-back">Inpainted</span>
+        </div>
       </div>
     </div>
 
@@ -1800,9 +2035,16 @@
         <img src="assets/artemis_replace.png">
         <div class="img-caption">Hole to Fill</div>
       </div>
-      <div class="img-card">
-        <img src="assets/artemis_inpaint.png">
-        <div class="img-caption">Artemis Inpainted</div>
+      <div class="img-card hover-swap">
+        <div class="img-wrapper">
+          <img src="assets/artemis.jpg" class="img-front">
+          <img src="assets/artemis_inpaint.png" class="img-back">
+        </div>
+
+        <div class="img-caption">
+          <span class="caption-front">Original<br>(Hover over me!)</span>
+          <span class="caption-back">Inpainted</span>
+        </div>
       </div>
     </div>
 
@@ -1820,9 +2062,16 @@
         <img src="assets/alma_replace.png">
         <div class="img-caption">Hole to Fill</div>
       </div>
-      <div class="img-card">
-        <img src="assets/alma_inpaint.png">
-        <div class="img-caption">Artemis Inpainted</div>
+      <div class="img-card hover-swap">
+        <div class="img-wrapper">
+          <img src="assets/alma.jpg" class="img-front">
+          <img src="assets/alma_inpaint.png" class="img-back">
+        </div>
+
+        <div class="img-caption">
+          <span class="caption-front">Original<br>(Hover over me!)</span>
+          <span class="caption-back">Inpainted</span>
+        </div>
       </div>
     </div>
 
@@ -1867,9 +2116,16 @@
         <img src="assets/campanile_liberty20.png">
         <div class="img-caption">Noise Level 20</div>
       </div>
-      <div class="img-card">
-        <img src="assets/campanile.jpg">
-        <div class="img-caption">Original</div>
+      <div class="img-card hover-swap">
+        <div class="img-wrapper">
+          <img src="assets/campanile.jpg" class="img-front">
+          <img src="assets/campanile_liberty.png" class="img-back">
+        </div>
+
+        <div class="img-caption">
+          <span class="caption-front">Campanile<br>(Hover over me!)</span>
+          <span class="caption-back">Statue of Liberty</span>
+        </div>
       </div>
     </div>
 
@@ -1900,9 +2156,16 @@
         <img src="assets/artemis_tower20.png">
         <div class="img-caption">Noise Level 20</div>
       </div>
-      <div class="img-card">
-        <img src="assets/artemis.jpg">
-        <div class="img-caption">Original</div>
+      <div class="img-card hover-swap">
+        <div class="img-wrapper">
+          <img src="assets/artemis.jpg" class="img-front">
+          <img src="assets/artemis_tower.png" class="img-back">
+        </div>
+
+        <div class="img-caption">
+          <span class="caption-front">Artemis Rocket<br>(Hover over me!)</span>
+          <span class="caption-back">Ancient Wizard Tower</span>
+        </div>
       </div>
     </div>
 
@@ -1933,9 +2196,16 @@
         <img src="assets/alma_queen20.png">
         <div class="img-caption">Noise Level 20</div>
       </div>
-      <div class="img-card">
-        <img src="assets/alma.jpg">
-        <div class="img-caption">Original</div>
+      <div class="img-card hover-swap">
+        <div class="img-wrapper">
+          <img src="assets/alma.jpg" class="img-front">
+          <img src="assets/alma_queen.png" class="img-back">
+        </div>
+
+        <div class="img-caption">
+          <span class="caption-front">Columbia's Alma Mater<br>(Hover over me!)</span>
+          <span class="caption-back">British Queen</span>
+        </div>
       </div>
     </div>
 
@@ -1965,15 +2235,17 @@
     <h3>Illusion 1: Mountain Range ↔ Sleeping Bear</h3>
     <p class="ref-note">p₁ = "an oil painting of a mountain range"</p>
     <p class="ref-note">p₂ = "an oil painting of a sleeping bear"</p>
-
+    
     <div class="img-grid cols-2">
-      <div class="img-card">
-        <img src="assets/bear_mountain1.png">
-        <div class="img-caption">Upright - Mountain Range</div>
-      </div>
-      <div class="img-card">
-        <img src="assets/bear_mountain2.png">
-        <div class="img-caption">Flipped - Sleeping Bear</div>
+      <div class="img-card hover-rotate">
+        <div class="img-wrapper">
+          <img src="assets/bear_mountain.png">
+        </div>
+
+        <div class="img-caption">
+          <span class="caption-front">Upright - Mountain Range<br>(Hover over me!)</span>
+          <span class="caption-back">Flipped - Sleeping Bear</span>
+        </div>
       </div>
     </div>
 
@@ -1982,13 +2254,15 @@
     <p class="ref-note">p₂ = "a pencil sketch of a sailing ship on the ocean"</p>
 
     <div class="img-grid cols-2">
-      <div class="img-card">
-        <img src="assets/owl_ship1.png">
-        <div class="img-caption">Upright - Owl on branch</div>
-      </div>
-      <div class="img-card">
-        <img src="assets/owl_ship2.png">
-        <div class="img-caption">Flipped - Sailing ship</div>
+      <div class="img-card hover-rotate">
+        <div class="img-wrapper">
+          <img src="assets/owl_ship.png">
+        </div>
+
+        <div class="img-caption">
+          <span class="caption-front">Upright - Owl on branch<br>(Hover over me!)</span>
+          <span class="caption-back">Flipped - Sailing Ship</span>
+        </div>
       </div>
     </div>
 
@@ -2019,13 +2293,14 @@
     <p class="ref-note">p₁ = "a lithograph of a human skull" (low freq)</p>
     <p class="ref-note">p₂ = "a lithograph of a forest of pine trees" (high freq)</p>
     <div class="img-grid cols-2-asym">
-      <div class="img-card small">
-        <img src="assets/skull_trees2.png">
-        <div class="img-caption">Downsampled(Far) - Skull</div>
-      </div>
-      <div class="img-card large">
-        <img src="assets/skull_trees1.png">
-        <div class="img-caption">Upsampled(Near) - Pine Trees</div>
+      <div class="img-card hover-scale-down">
+        <div class="img-wrapper">
+          <img src="assets/skull_trees.png">
+        </div>
+        <div class="img-caption">
+          <span class="caption-front">Upsampled(Near) - Pine Trees</span>
+          <span class="caption-back">Downsampled(Far) - Skull</span>
+        </div>
       </div>
     </div>
 
@@ -2033,13 +2308,14 @@
     <p class="ref-note">p₁ = "a photo of a yin yang" (low freq)</p>
     <p class="ref-note">p₂ = "a photo of Rome" (high freq)</p>
     <div class="img-grid cols-2-asym">
-      <div class="img-card small">
-        <img src="assets/yinyang_rome2.png">
-        <div class="img-caption">Downsampled(Far) - Yin Yang</div>
-      </div>
-      <div class="img-card large">
-        <img src="assets/yinyang_rome1.png">
-        <div class="img-caption">Upsampled(Near) - City of Rome</div>
+      <div class="img-card hover-scale-down">
+        <div class="img-wrapper">
+          <img src="assets/yinyang_rome.png">
+        </div>
+        <div class="img-caption">
+          <span class="caption-front">Upsampled(Near) - City of Rome</span>
+          <span class="caption-back">Downsampled(Far) - Yin Yang</span>
+        </div>
       </div>
     </div>
 
