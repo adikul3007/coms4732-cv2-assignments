@@ -1,0 +1,2121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HW5: Diffusion Models and Flow Matching</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0d0e12;
+    --surface: #13151b;
+    --surface2: #1a1d27;
+    --border: #252837;
+    --accent: #c8a96e;
+    --accent2: #7c9fc4;
+    --accent3: #b87aa8;
+    --accent4: #a67cc4;
+    --text: #e8e4dc;
+    --text-muted: #8c8878;
+    --text-dim: #5a5750;
+    --green: #6fb88b;
+    --red: #c47a7a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  img, video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ─── WATERMARK ─── */
+  .watermark {
+    position: fixed;
+    bottom: 28px;
+    right: 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    z-index: 999;
+    opacity: 0.55;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ─── NOISE TEXTURE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 80px 40px;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(200,169,110,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(124,159,196,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 60%, rgba(184,122,168,0.05) 0%, transparent 60%);
+    z-index: 0;
+  }
+
+  .header-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.3;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);
+    z-index: 0;
+  }
+
+  header > * { position: relative; z-index: 1; }
+
+  .course-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(200,169,110,0.3);
+    padding: 6px 18px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.8rem, 6vw, 5.5rem);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    max-width: 900px;
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .header-subtitle {
+    margin-top: 24px;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-style: italic;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 48px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+
+  .meta-item {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .meta-item span {
+    color: var(--accent2);
+  }
+
+  a:link { color: var(--accent2); }
+  a:visited { color: var(--accent4); }
+  a:hover { color: var(--accent); }
+  a:link, a:visited, a:hover, a:active {
+    text-decoration: none;
+  }
+
+
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    animation: fadeUp 1s 0.5s ease both, pulse 3s 1.5s ease-in-out infinite;
+    z-index: 1;
+  }
+
+  /* ─── DRAWER NAV ─── */
+  .drawer-toggle {
+    position: fixed;
+    top: 22px;
+    left: 24px;
+    z-index: 210;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(200,169,110,0.35);
+    background: rgba(13,14,18,0.75);
+    backdrop-filter: blur(12px);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  }
+
+  .drawer-toggle:hover {
+    transform: translateY(-1px);
+    border-color: rgba(200,169,110,0.7);
+    background: rgba(19,21,27,0.88);
+  }
+
+  .drawer-toggle .menu-icon {
+    width: 16px;
+    height: 12px;
+    display: inline-grid;
+    gap: 3px;
+  }
+
+  .drawer-toggle .menu-icon span {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: var(--accent);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  body.drawer-open .drawer-toggle .menu-icon span:nth-child(1) {
+    transform: translateY(4px) rotate(45deg);
+  }
+
+  body.drawer-open .drawer-toggle .menu-icon span:nth-child(2) {
+    opacity: 0;
+  }
+
+  body.drawer-open .drawer-toggle .menu-icon span:nth-child(3) {
+    transform: translateY(-4px) rotate(-45deg);
+  }
+
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 170;
+    background: rgba(0,0,0,0.42);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  body.drawer-open .drawer-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  nav.drawer-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(360px, 86vw);
+    height: 100vh;
+    z-index: 200;
+    background:
+      linear-gradient(160deg, rgba(124,159,196,0.08), transparent 35%),
+      linear-gradient(20deg, rgba(184,122,168,0.08), transparent 40%),
+      rgba(13,14,18,0.97);
+    border-right: 1px solid var(--border);
+    transform: translateX(-102%);
+    opacity: 0.2;
+    transition: transform 0.38s cubic-bezier(.22,.9,.2,1), opacity 0.28s ease;
+    overflow-y: auto;
+    padding: 24px 16px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  body.drawer-open nav.drawer-nav {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  .drawer-header {
+    position: sticky;
+    top: 0;
+    background: rgba(13,14,18,0.9);
+    backdrop-filter: blur(8px);
+    margin: -24px -16px 12px;
+    padding: 18px 16px 12px;
+    border-bottom: 1px solid rgba(37,40,55,0.7);
+    z-index: 2;
+  }
+
+  .drawer-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  nav.drawer-nav a {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+    border-left: 2px solid transparent;
+    background: rgba(19,21,27,0.55);
+    transition: transform 0.18s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  }
+
+  nav.drawer-nav a:hover {
+    color: var(--text);
+    border-color: rgba(200,169,110,0.35);
+    border-left-color: var(--accent);
+    background: rgba(26,29,39,0.8);
+    transform: translateX(2px);
+  }
+
+  .drawer-section {
+    margin-bottom: 10px;
+  }
+
+  .drawer-parent {
+    color: var(--text) !important;
+    border-color: rgba(124,159,196,0.28) !important;
+    background: rgba(26,29,39,0.9) !important;
+  }
+
+  .drawer-children {
+    margin-top: 6px;
+    margin-left: 14px;
+    padding-left: 10px;
+    border-left: 1px solid rgba(124,159,196,0.25);
+  }
+
+  .drawer-children a {
+    font-size: 10px !important;
+    letter-spacing: 0.11em !important;
+    color: var(--text-dim) !important;
+    background: rgba(19,21,27,0.35) !important;
+  }
+
+  .drawer-children a:hover {
+    color: var(--accent2) !important;
+    border-left-color: var(--accent2) !important;
+    background: rgba(26,29,39,0.75) !important;
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 40px 120px;
+    width: 100%;
+  }
+
+  /* ─── SECTION ─── */
+  .section {
+    padding: 80px 0 60px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(200,169,110,0.2);
+    max-width: 80px;
+  }
+
+  h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 400;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+
+  h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--accent2);
+    margin: 40px 0 14px;
+  }
+
+  p {
+    color: var(--text-muted);
+    max-width: 720px;
+    margin-bottom: 16px;
+  }
+
+  p strong { color: var(--text); font-weight: 600; }
+
+  /* ─── EQUATION BOX ─── */
+  .equation {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 18px 24px;
+    margin: 24px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    color: var(--accent);
+    overflow-x: auto;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* ─── IMAGE GRID ─── */
+  .img-grid {
+    display: grid;
+    gap: 16px;
+    margin: 32px 0;
+    align-items: stretch;
+  }
+
+  .img-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .img-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .img-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .img-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+  .img-grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
+  .img-grid.cols-7 { grid-template-columns: repeat(7, 1fr); }
+
+  .img-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: default;
+    min-width: 0;
+  }
+
+  .img-card:hover {
+    border-color: rgba(200,169,110,0.4);
+    transform: translateY(-2px);
+  }
+
+  .img-card .img-placeholder {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--surface2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .img-card .img-placeholder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 8px,
+      rgba(255,255,255,0.015) 8px,
+      rgba(255,255,255,0.015) 16px
+    );
+  }
+
+  .img-card .img-placeholder:has(img)::before {
+    display: none;
+  }
+
+  .img-card .img-placeholder .icon {
+    font-size: 22px;
+    opacity: 0.4;
+  }
+
+  .img-card .img-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .img-card > img,
+  .img-card picture img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+
+  .img-caption {
+    padding: 10px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  /* CENTER THE WHOLE PAIR */
+.center-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* LAYOUT */
+.img-grid.cols-2-asym {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  /* CARD STACK (image + caption) */
+  .img-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* FORCE FIXED SQUARE SIZES */
+  .img-card.small img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .img-card.large img {
+    width: 256px;
+    height: 256px;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* CAPTION */
+  .img-caption {
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* MOBILE */
+  @media (max-width: 600px) {
+    .img-grid.cols-2-asym {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .img-card.small img {
+      width: 80px;
+      height: 80px;
+    }
+
+    .img-card.large img {
+      width: 220px;
+      height: 220px;
+    }
+  }
+
+  /* ─── WIDE GRID (for 5/6 col) ─── */
+
+  @media (max-width: 900px) {
+    .img-grid.cols-3, .img-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+    .img-grid.cols-5, .img-grid.cols-6 { grid-template-columns: repeat(3, 1fr); }
+    .img-grid.cols-7 { grid-template-columns: repeat(4, 1fr); }
+    .comparison { flex-direction: column; }
+    .params-table { display: block; overflow-x: auto; }
+  }
+
+  @media (max-width: 600px) {
+    .img-grid { grid-template-columns: 1fr !important; }
+    main { padding: 0 20px 80px; }
+    .drawer-toggle { top: 16px; left: 16px; }
+    header { padding: 60px 20px; }
+    .watermark { display: none; }
+    h3 { font-size: 1.2rem; }
+    .section { padding: 64px 0 48px; }
+    .part-b-placeholder { padding: 48px 20px; margin-top: 40px; }
+    .obs-box, .equation, .algo-block { padding: 16px; }
+  }
+
+  @media (max-width: 420px) {
+    body { font-size: 16px; }
+    h2 { font-size: clamp(1.5rem, 8vw, 2rem); }
+    .drawer-toggle { padding: 9px 11px; }
+    .drawer-toggle span:last-child { display: none; }
+  }
+
+  /* ─── OBSERVATION BOX ─── */
+  .obs-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent2);
+    padding: 20px 24px;
+    margin: 24px 0;
+    border-radius: 0 0 4px 4px;
+  }
+
+  .obs-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 8px;
+  }
+
+  .obs-box p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+    max-width: 100%;
+  }
+
+  /* ─── COMPARISON ROW ─── */
+  .comparison {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 24px 0;
+    align-items: flex-start;
+  }
+
+  .comparison-group {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .comparison-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--accent3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ─── PART B PLACEHOLDER ─── */
+  .part-b-placeholder {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    padding: 80px 40px;
+    text-align: center;
+    margin-top: 80px;
+  }
+
+  .part-b-placeholder h2 {
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .part-b-placeholder p {
+    color: var(--text-dim);
+    font-style: italic;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .coming-soon {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border: 1px dashed var(--text-dim);
+    padding: 6px 18px;
+    margin-bottom: 24px;
+    opacity: 0.5;
+  }
+
+  /* ─── DIVIDER ─── */
+  .divider {
+    width: 60px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.4;
+    margin: 32px 0;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.9; }
+  }
+
+  /* ─── TABLE ─── */
+  .params-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    margin: 24px 0;
+  }
+
+  .params-table th {
+    text-align: left;
+    padding: 10px 16px;
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .params-table td {
+    padding: 10px 16px;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(37,40,55,0.5);
+  }
+
+  .params-table tr:hover td {
+    background: var(--surface);
+  }
+
+  /* ─── FOOTNOTE / REFERENCE ─── */
+  .ref-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  /* ─── ALGORITHM BLOCK ─── */
+  .algo-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+
+  .algo-block .algo-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent3);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .algo-block code {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 2;
+  }
+
+  .algo-block code .kw { color: var(--accent2); }
+  .algo-block code .var { color: var(--accent); }
+  .algo-block code .cmt { color: var(--text-dim); font-style: italic; }
+</style>
+</head>
+<body>
+
+<!-- Watermark -->
+<div class="watermark">ash2285 · coms4732w · hw5</div>
+
+<!-- ─── HEADER ─── -->
+<header>
+  <div class="header-bg"></div>
+  <div class="header-grid"></div>
+  <div class="course-tag">COMS 4732W &nbsp;·&nbsp; Computer Vision 2 &nbsp;·&nbsp; Homework 5</div>
+  <h1>Diffusion Models<br><em>& Flow Matching</em></h1>
+  <div class="header-meta">
+    <div class="meta-item">Author: <span>Aditya Handur-Kulkarni (UNI:ash2285)</span></div>
+    <br>
+    <div class="meta-item">Source: <span><a href="https://www.github.com" target="_blank">GitHub Link</a></span></div>
+  </div>
+  <a class="scroll-hint" href="#parta">↓ &nbsp; scroll to explore</a>
+</header>
+
+<button class="drawer-toggle" id="drawerToggle" aria-label="Open section drawer" aria-controls="drawerNav" aria-expanded="false">
+  <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+  <span>Sections</span>
+</button>
+<div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
+
+<!-- ─── NAV DRAWER ─── -->
+<nav class="drawer-nav" id="drawerNav">
+  <div class="drawer-header">
+    <div class="drawer-title">Navigate Sections</div>
+  </div>
+  <div class="drawer-section">
+    <a class="drawer-parent" href="#parta">Part A</a>
+    <div class="drawer-children">
+      <a href="#parta10">1.0 Setup</a>
+      <a href="#parta11">1.1 Forward Process</a>
+      <a href="#parta12">1.2 Classical Denoising</a>
+      <a href="#parta13">1.3 One-Step Denoising</a>
+      <a href="#parta14">1.4 Iterative Denoising</a>
+      <a href="#parta15">1.5 Diffusion Model Sampling</a>
+      <a href="#parta16">1.6 Classifier-Free Guidance (CFG)</a>
+      <a href="#parta17">1.7 Image-to-image Translation</a>
+      <div class="drawer-children">
+        <a href="#parta171">1.7.1 Hand-Drawn</a>
+        <a href="#parta172">1.7.2 Inpainting</a>
+        <a href="#parta173">1.7.3 Text-Guided</a>
+      </div>
+      <a href="#parta18">1.8 Visual Anagrams</a>
+      <a href="#parta19">1.9 Hybrid Images</a>
+    </div>
+  </div>
+  <div class="drawer-section">
+    <a class="drawer-parent" href="#partb">Part B</a>
+    <div class="drawer-children">
+      <a href="#partb11">1.1 Implementing UNet</a>
+      <a href="#partb12">1.2 Training a Denoiser</a>
+      <div class="drawer-children">
+        <a href="#partb121">1.2.1 Training</a>
+        <a href="#partb122">1.2.2 Out-of-Distribution Testing</a>
+        <a href="#partb123">1.2.3 Denoising Pure Noise</a>
+      </div>
+      <a href="#partb21">2.1 Time Conditioning</a>
+      <a href="#partb22">2.2 Training Part 1</a>
+      <a href="#partb23">2.3 Sampling Part 1</a>
+      <a href="#partb24">2.4 Class-Conditioning</a>
+      <a href="#partb25">2.5 Training Part 2</a>
+      <a href="#partb26">2.6 Sampling Part 2</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ─── PART A HEADER ─── -->
+  <section class="section" id="parta">
+    <div class="section-label">Part A</div>
+    <h2>The Power of Diffusion Models!</h2>
+    <p>
+      This project explores the practical and creative potential of state-of-the-art diffusion models using the DeepFloyd IF framework. We implemented key components of the diffusion pipeline, including the forward noise process and custom iterative denoising loops, progressing from classical methods to learned denoising with a pretrained UNet. Image quality was further enhanced using Classifier-Free Guidance (CFG), enabling stronger alignment between generated outputs and text prompts.
+      <br><br>
+      Building on this foundation, a unified framework was developed for multiple advanced tasks: high-quality image generation from noise, image-to-image translation (SDEdit), and semantic inpainting. These tasks demonstrate how diffusion models can be leveraged for controlled and realistic image manipulation. Beyond standard applications, the pipeline was extended to create visual anagrams and hybrid images, showcasing the model's ability to generate perceptually rich and multi-interpretation visuals.
+      <br><br>
+      Overall, this project highlights both the theoretical understanding and practical implementation of diffusion models, emphasizing their versatility for generative modeling, structured editing, and creative visual synthesis.
+    </p>
+  </section>
+
+  <!-- ─── PART 1.0 ─── -->
+  <section class="section" id="parta10">
+    <div class="section-label">Part 1.0</div>
+    <h2>Setup & Prompt Exploration</h2>
+    <p>
+      We use <strong>DeepFloyd IF</strong>, a two-stage cascaded diffusion model by Stability AI. Stage I produces 64×64 images; Stage II upsamples to 256×256. The model is text-conditioned: raw text is first encoded into 4096-dimensional prompt embeddings before being fed into the denoising UNet.
+    </p>
+    <p>
+      All experiments use a fixed random seed of <strong>888</strong> to ensure reproducibility. Prompt embeddings were precomputed and stored in a <code style="font-family:'DM Mono',monospace;font-size:0.85em;color:var(--accent)">.pth</code> dictionary.
+    </p>
+
+    <table class="params-table">
+      <thead>
+        <tr>
+          <th>Prompt</th>
+          <th>Used For</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>a high quality photo</td><td>Null condition baseline</td></tr>
+        <tr><td>a watercolor painting of a lighthouse in a storm</td><td>Experimenting with different prompts</td></tr>
+        <tr><td>a macro photograph of a butterfly wing</td><td>Experimenting with different prompts</td></tr>
+        <tr><td>a cyberpunk city street at night with neon lights</td><td>Experimenting with different prompts</td></tr>
+        <tr><td>ancient wizard tower, fantasy, glowing runes, misty environment, detailed textures</td><td>Text-conditioned img2img</td></tr>
+        <tr><td>Statue of Liberty, realistic, cinematic lighting</td><td>Text-conditioned img2img</td></tr>
+        <tr><td>British queen on a royal throne, holding a sceptre, regal attire, crown, ornate palace setting, dramatic lighting, ultra detailed, photorealistic</td><td>Text-conditioned img2img</td></tr>
+        <tr><td>an oil painting of a sleeping bear</td><td>Used for visual anagram</td></tr>
+        <tr><td>an oil painting of a mountain range</td><td>Used for visual anagram</td></tr>
+        <tr><td>a pencil sketch of an owl perched on a branch</td><td>Used for visual anagram</td></tr>
+        <tr><td>a pencil sketch of a sailing ship on the ocean</td><td>Used for visual anagram</td></tr>
+        <tr><td>a lithograph of a human skull</td><td>Used for hybrid image</td></tr>
+        <tr><td>a lithograph of a forest of pine trees</td><td>Used for hybrid image</td></tr>
+        <tr><td>a photo of a yin yang</td><td>Used for hybrid image</td></tr>
+        <tr><td>a photo of Rome</td><td>Used for hybrid image</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Generated Images (3 Selected Prompts)</h3>
+    <p>Below are sample outputs generated directly from DeepFloyd at two different inference step counts, demonstrating how generation quality improves with more denoising steps.</p>
+
+    <div class="img-grid cols-3">
+      <div class="img-card">
+        <img src="assets/lighthouse_20_stage2.png">
+        <div class="img-caption"> watercolor painting of a lighthouse in a storm · 20 steps</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/butterfly_20_stage2.png">
+        <div class="img-caption">a macro photograph of a butterfly wing · 20 steps</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cyberpunk_20_stage2.png">
+        <div class="img-caption">a cyberpunk city street at night with neon lights · 20 steps</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/lighthouse_100_stage2.png">
+        <div class="img-caption"> watercolor painting of a lighthouse in a storm · 100 steps</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/butterfly_100_stage2.png">
+        <div class="img-caption">a macro photograph of a butterfly wing · 100 steps</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cyberpunk_100_stage2.png">
+        <div class="img-caption">a cyberpunk city street at night with neon lights · 100 steps</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>With <strong>steps=20</strong>, images are plausible but can appear slightly blurry or over-smoothed. Increasing to <strong>steps=100</strong> yields sharper textures and better prompt alignment.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.1 ─── -->
+  <section class="section" id="parta11">
+    <div class="section-label">Part 1.1</div>
+    <h2>Implementing the Forward Process</h2>
+    <p>
+      The diffusion forward process adds Gaussian noise to a clean image according to noise schedule coefficients <strong>ᾱ<sub>t</sub></strong>. At t=0 the image is clean; at t=T=1000 it is pure noise.
+    </p>
+
+    <div class="equation">
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <msub>
+          <mi>x</mi>
+          <mi>t</mi>
+        </msub>
+      
+        <mo>=</mo>
+      
+        <msqrt>
+          <msub>
+            <mover accent="true">
+              <mi>α</mi>
+              <mo>¯</mo>
+            </mover>
+            <mi>t</mi>
+          </msub>
+        </msqrt>
+      
+        <mo>&#x22C5;</mo>
+      
+        <msub>
+          <mi>x</mi>
+          <mn>0</mn>
+        </msub>
+      
+        <mo>+</mo>
+      
+        <msqrt>
+          <mrow>
+            <mn>1</mn>
+            <mo>−</mo>
+            <msub>
+              <mover accent="true">
+                <mi>α</mi>
+                <mo>¯</mo>
+              </mover>
+              <mi>t</mi>
+            </msub>
+          </mrow>
+        </msqrt>
+      
+        <mo>&#x22C5;</mo>
+      
+        <mi>ε</mi>
+      
+        <mtext>&#160;&#160; where &#160;</mtext>
+      
+        <mi>ε</mi>
+      
+        <mo>~</mo>
+      
+        <mi>N</mi>
+      
+        <mo>(</mo>
+        <mn>0</mn>
+        <mo>,</mo>
+        <mi>I</mi>
+        <mo>)</mo>
+      </math>
+    </div>
+
+    <p>
+      That is, given a clean image <em>x<sub>0</sub></em> ,we get a noisy image <em>x<sub>t</sub></em> at timestep <em>t</em> by sampling from a Gaussian with mean <em>√ᾱ<sub>t</sub>x<sub>0</sub></em> and variance <em>(1 − ᾱ<sub>t</sub>)</em> .The Campanile test image (resized to 64×64) is noised at three timesteps t ∈ {250, 500, 750}, showing progressively more signal destruction as ᾱ<sub>t</sub> decreases from ~0.9 toward ~0.1.
+    </p>
+
+    <div class="img-grid cols-4">
+      <div class="img-card">
+        <img src="assets/campanile.jpg">
+        <div class="img-caption">Original · t = 0</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy250.png">
+        <div class="img-caption">Noisy · t = 250</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy500.png">
+        <div class="img-caption">Noisy · t = 500</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy750.png">
+        <div class="img-caption">Mostly Noise · t = 750</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>At t=250, the Campanile silhouette remains clearly visible with some color noise. At t=500, the structure is blurred and partially overwhelmed by noise. At t=750, the original image is nearly indistinguishable. The forward process has almost fully destroyed the signal, leaving only spectral traces.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.2 ─── -->
+  <section class="section" id="parta12">
+    <div class="section-label">Part 1.2</div>
+    <h2>Classical Denoising</h2>
+    <p>
+      Gaussian blur filtering is applied as a classical denoising baseline. While it smooths high-frequency noise, it cannot recover the true underlying signal, especially at high noise levels, because it has no model of the image manifold.
+    </p>
+
+    <h3>Noisy vs. Gaussian Blur Denoised</h3>
+    <div class="img-grid cols-3">
+      <div class="img-card">
+        <img src="assets/campanile_noisy250.png">
+        <div class="img-caption">Noisy · t = 250</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy500.png">
+        <div class="img-caption">Noisy · t = 500</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy750.png">
+        <div class="img-caption">Noisy · t = 750</div>
+      </div>
+    </div>
+    <div class="img-grid cols-3">
+      <div class="img-card">
+        <img src="assets/campanile_noisy250_gaussian.png">
+        <div class="img-caption">Gaussian Blur Denoised · t = 250</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy500_gaussian.png">
+        <div class="img-caption">Gaussian Blur Denoised · t = 500</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy750_gaussian.png">
+        <div class="img-caption">Gaussian Blur Denoised · t = 750</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>Gaussian blur removes high-frequency noise but produces a blurry, washed-out result at all noise levels. At t=500 and t=750, the "denoised" images are practically unrecognizable. This demonstrates the fundamental limitation of frequency-domain methods that lack semantic priors.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.3 ─── -->
+  <section class="section" id="parta13">
+    <div class="section-label">Part 1.3</div>
+    <h2>One-Step Denoising with a UNet</h2>
+    <p>
+      Instead of classical filtering, we leverage the pretrained <code style="font-family:'DM Mono',monospace;font-size:0.85em;color:var(--accent)">stage_1.unet</code> to estimate and subtract the noise. The UNet has learned a rich prior over natural images and can make much more informed denoising decisions.
+    </p>
+    <p>
+      Given noisy image x<sub>t</sub> and timestep t, the UNet outputs a 6-channel tensor. The first 3 channels give the predicted noise ε̂. We recover x̂<sub>0</sub> via the inverse of the forward equation.
+    </p>
+
+    <div class="equation">
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <mover>
+          <msub>
+            <mi>x</mi>
+            <mn>0</mn>
+          </msub>
+          <mo>^</mo>
+        </mover>
+      
+        <mo>=</mo>
+      
+        <mfrac>
+          <mrow>
+            <msub>
+              <mi>x</mi>
+              <mi>t</mi>
+            </msub>
+      
+            <mo>−</mo>
+      
+            <msqrt>
+              <mrow>
+                <mn>1</mn>
+                <mo>−</mo>
+                <msub>
+                  <mover accent="true">
+                    <mi>α</mi>
+                    <mo>¯</mo>
+                  </mover>
+                  <mi>t</mi>
+                </msub>
+              </mrow>
+            </msqrt>
+      
+            <mo>&#x22C5;</mo>
+      
+            <mover>
+              <mi>ε</mi>
+              <mo>^</mo>
+            </mover>
+          </mrow>
+      
+          <mrow>
+            <msqrt>
+              <msub>
+                <mover accent="true">
+                  <mi>α</mi>
+                  <mo>¯</mo>
+                </mover>
+                <mi>t</mi>
+              </msub>
+            </msqrt>
+          </mrow>
+        </mfrac>
+      </math>
+    </div>
+
+    <div class="img-grid cols-3">
+      <div class="img-card">
+        <img src="assets/campanile_noisy250.png">
+        <div class="img-caption">Noisy · t = 250</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy500.png">
+        <div class="img-caption">Noisy · t = 500</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy750.png">
+        <div class="img-caption">Noisy · t = 750</div>
+      </div>
+    </div>
+    <div class="img-grid cols-3">
+      <div class="img-card">
+        <img src="assets/campanile_noisy250_onestep.png">
+        <div class="img-caption">One-Step Denoised · t = 250</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy500_onestep.png">
+        <div class="img-caption">One-Step Denoised · t = 500</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_noisy750_onestep.png">
+        <div class="img-caption">One-Step Denoised · t = 750</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>At t=250, one-step denoising nearly recovers the original image. At t=500 the result is still recognizable but shows hallucinated details. At t=750, the single-step estimate diverges significantly and the problem is too ill-posed for a single network pass to solve reliably. This motivates <em>iterative</em> denoising.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.4 ─── -->
+  <section class="section" id="parta14">
+    <div class="section-label">Part 1.4</div>
+    <h2>Iterative Denoising</h2>
+    <p>
+      Rather than denoising in a single step (requiring 1000 UNet passes to go from x<sub>T</sub> to x<sub>0</sub>), we use a <strong>strided timestep schedule</strong> starting at t=990, stepping by 30, down to t=0, giving 33 total steps. At each step we use the DDPM update rule:
+    </p>
+
+    <div class="equation">
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <msub>
+          <mi>x</mi>
+          <mi>t'</mi>
+        </msub>
+      
+        <mo>=</mo>
+      
+        <mfrac>
+          <mrow>
+            <msqrt>
+              <msub>
+                <mi>α</mi>
+                <mi>t'</mi>
+              </msub>
+            </msqrt>
+            <mo>&#x22C5;</mo>
+            <msub>
+              <mi>β</mi>
+              <mi>t</mi>
+            </msub>
+          </mrow>
+          <mrow>
+            <mn>1</mn>
+            <mo>-</mo>
+            <msub>
+              <mover accent="true">
+                <mi>α</mi>
+                <mo>¯</mo>
+              </mover>
+              <mi>t</mi>
+            </msub>
+          </mrow>
+        </mfrac>
+      
+        <mo>&#x22C5;</mo>
+      
+        <msub>
+          <mover accent="true">
+            <mi>x</mi>
+            <mo>^</mo>
+          </mover>
+          <mn>0</mn>
+        </msub>
+      
+        <mo>+</mo>
+      
+        <mfrac>
+          <mrow>
+            <msqrt>
+              <msub>
+                <mi>α</mi>
+                <mi>t</mi>
+              </msub>
+            </msqrt>
+            <mo>&#x22C5;</mo>
+            <mrow>
+              <mn>1</mn>
+              <mo>-</mo>
+              <msub>
+                <mover accent="true">
+                  <mi>α</mi>
+                  <mo>¯</mo>
+                </mover>
+                <mi>t'</mi>
+              </msub>
+            </mrow>
+          </mrow>
+          <mrow>
+            <mn>1</mn>
+            <mo>-</mo>
+            <msub>
+              <mover accent="true">
+                <mi>α</mi>
+                <mo>¯</mo>
+              </mover>
+              <mi>t</mi>
+            </msub>
+          </mrow>
+        </mfrac>
+      
+        <mo>&#x22C5;</mo>
+      
+        <msub>
+          <mi>x</mi>
+          <mi>t</mi>
+        </msub>
+      
+        <mo>+</mo>
+      
+        <msub>
+          <mi>v</mi>
+          <mi>σ</mi>
+        </msub>
+      </math>
+    </div>
+
+    <p>where:<br>
+      • x<sub>t</sub> is your image at timestep t <br>
+      • x<sub>t'</sub> is your image at timestep t' where t' < t (less noisy) <br>
+      • ᾱ<sub>t</sub> is defined by alphas_cumprod (array of hyperparameters) <br>
+      • α<sub>t</sub> = ᾱ<sub>t</sub>/ᾱ<sub>t'</sub> <br>
+      • β<sub>t</sub> = 1 − α<sub>t</sub> <br>
+      • x<sub>0</sub> is our current estimate of the clean image using one-step denoising <br>
+      • v<sub>σ</sub> is a predicted variance term <br>
+    </p>
+
+    <h3>Denoising Loop (every 5th step)</h3>
+    <div class="img-grid cols-5">
+      <div class="img-card">
+        <img src="assets/campanile_denoise_i10.png">
+        <div class="img-caption">Step at i = 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_denoise_i15.png">
+        <div class="img-caption">Step at i = 15</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_denoise_i20.png">
+        <div class="img-caption">Step at i = 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_denoise_i25.png">
+        <div class="img-caption">Step at i = 25</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_denoise_i30.png">
+        <div class="img-caption">Step at i = 30</div>
+      </div>
+    </div>
+
+    <h3>Final Comparison</h3>
+    <div class="img-grid cols-4">
+      <div class="img-card">
+        <img src="assets/campanile.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_denoise_i30.png">
+        <div class="img-caption">Iteratively Denoised</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_onestep.png">
+        <div class="img-caption">One-Step Denoised</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_gaussian.png">
+        <div class="img-caption">Gaussian Blur</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>Iterative denoising dramatically outperforms both single-step and Gaussian methods. The gradual refinement allows the model to progressively hallucinate coherent structure. The result is sharp, semantically meaningful, and closely resembles the original.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.5 ─── -->
+  <section class="section" id="parta15">
+    <div class="section-label">Part 1.5</div>
+    <h2>Diffusion Model Sampling</h2>
+    <p>
+      By starting the iterative denoising loop from <strong>pure Gaussian noise</strong> (i_start=0) instead of a real noisy image, we can generate entirely new images from scratch. This is the core generative capability of diffusion models.
+    </p>
+
+    <p>Five samples were generated using the prompt <em>"a high quality photo"</em>:</p>
+
+    <div class="img-grid cols-5">
+      <div class="img-card">
+        <img src="assets/diffusion_sample1.png">
+        <div class="img-caption">Sample 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/diffusion_sample2.png">
+        <div class="img-caption">Sample 2</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/diffusion_sample3.png">
+        <div class="img-caption">Sample 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/diffusion_sample4.png">
+        <div class="img-caption">Sample 4</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/diffusion_sample5.png">
+        <div class="img-caption">Sample 5</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>Without classifier-free guidance, the null-conditioned generations are valid images but lack sharpness and coherence. Some samples are clearly recognizable (portraits, landscapes) while others are semi-abstract. Quality will be substantially improved in Part 1.6 with CFG.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.6 ─── -->
+  <section class="section" id="parta16">
+    <div class="section-label">Part 1.6</div>
+    <h2>Classifier-Free Guidance (CFG)</h2>
+    <p>
+      CFG dramatically improves sample quality by amplifying the difference between conditional(ε<sub>c</sub>) and unconditional(ε<sub>u</sub>) noise estimates. The combined noise estimate is:
+    </p>
+
+    <div class="equation">
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <mi>ε</mi>
+      
+        <mo>=</mo>
+      
+        <msub>
+          <mi>ε</mi>
+          <mi>u</mi>
+        </msub>
+      
+        <mo>+</mo>
+      
+        <mi>γ</mi>
+      
+        <mo>&#x22C5;</mo>
+      
+        <mrow>
+          <mo>(</mo>
+          
+          <msub>
+            <mi>ε</mi>
+            <mi>c</mi>
+          </msub>
+      
+          <mo>−</mo>
+      
+          <msub>
+            <mi>ε</mi>
+            <mi>u</mi>
+          </msub>
+      
+          <mo>)</mo>
+        </mrow>
+      </math>
+    </div>
+
+    <p>
+      Here, γ controls the strength of CFGWith γ=0 we recover the unconditional estimate; with γ=1 the conditional. For <strong>γ &gt; 1</strong> (we use γ=7), the model over-commits to the condition, trading diversity for quality. The unconditional estimate uses the <em>empty string</em> prompt embedding.
+    </p>
+
+    <div class="img-grid cols-5">
+      <div class="img-card">
+        <img src="assets/cfg_sample1.png">
+        <div class="img-caption">CFG Sample 1 · γ=7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cfg_sample2.png">
+        <div class="img-caption">CFG Sample 2 · γ=7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cfg_sample3.png">
+        <div class="img-caption">CFG Sample 3 · γ=7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cfg_sample4.png">
+        <div class="img-caption">CFG Sample 4 · γ=7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cfg_sample5.png">
+        <div class="img-caption">CFG Sample 5 · γ=7</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>The improvement with CFG is striking. Images are sharper, better-lit, and more semantically coherent. The trade-off is reduced diversity. All samples have a more "photographic" quality rather than the varied, sometimes abstract outputs of unconditioned sampling.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.7 ─── -->
+  <section class="section" id="parta17">
+    <div class="section-label">Part 1.7</div>
+    <h2>Image-to-Image Translation (SDEdit)</h2>
+    <p>
+      By adding a small amount of noise to an existing image and then running the iterative denoising loop with CFG, we can "edit" images in a manner guided by the model's learned prior. The <strong>starting index i_start</strong> controls the strength of the edit, larger values allow more deviation from the original.
+    </p>
+    <p>
+      This implements the <em>SDEdit</em> algorithm: noising to timestep t[i_start], then denoising back to t=0 with the conditional text prompt "a high quality photo" on the Campanile image followed by 2 custom images.
+    </p>
+
+    <h3>Campanile SDEdit</h3>
+    <p class="ref-note">Prompt: "a high quality photo" · CFG γ=7</p>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/campanile_sdedit1.png">
+        <div class="img-caption">i_start = 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_sdedit3.png">
+        <div class="img-caption">i_start = 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_sdedit5.png">
+        <div class="img-caption">i_start = 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_sdedit7.png">
+        <div class="img-caption">i_start = 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_sdedit10.png">
+        <div class="img-caption">i_start = 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_sdedit20.png">
+        <div class="img-caption">i_start = 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+
+    <h3>Custom Image 1 (artemis.jpg)</h3>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/artemis_sdedit1.png">
+        <div class="img-caption">i_start = 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_sdedit3.png">
+        <div class="img-caption">i_start = 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_sdedit5.png">
+        <div class="img-caption">i_start = 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_sdedit7.png">
+        <div class="img-caption">i_start = 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_sdedit10.png">
+        <div class="img-caption">i_start = 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_sdedit20.png">
+        <div class="img-caption">i_start = 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+
+    <h3>Custom Image 2 (cube.jpg)</h3>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/cube_sdedit1.png">
+        <div class="img-caption">i_start = 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cube_sdedit3.png">
+        <div class="img-caption">i_start = 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cube_sdedit5.png">
+        <div class="img-caption">i_start = 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cube_sdedit7.png">
+        <div class="img-caption">i_start = 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cube_sdedit10.png">
+        <div class="img-caption">i_start = 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cube_sdedit20.png">
+        <div class="img-caption">i_start = 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/cube.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>At i_start=1-3, the edit is minimal with essentially no change. As i_start increases toward 20, the model gains freedom to reinterpret the content: colors shift, textures transform, and at i_start=20 the result may diverge significantly from the original while retaining the broad compositional structure.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.7.1 ─── -->
+  <section class="section" id="parta171">
+    <div class="section-label">Part 1.7.1</div>
+    <h2>Editing Hand-Drawn &amp; Web Images</h2>
+    <p>
+      SDEdit works especially well on non-photorealistic inputs. A hand-drawn or web-sourced image is first projected into the latent noise space, then denoised using the learned prior. The model "interprets" the rough sketch through the lens of its training distribution.
+    </p>
+
+    <h3>Web Image (Tree Drawing)</h3>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/web_cfg1.png">
+        <div class="img-caption">i_start = 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/web_cfg3.png">
+        <div class="img-caption">i_start = 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/web_cfg5.png">
+        <div class="img-caption">i_start = 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/web_cfg7.png">
+        <div class="img-caption">i_start = 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/web_cfg10.png">
+        <div class="img-caption">i_start = 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/web_cfg20.png">
+        <div class="img-caption">i_start = 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/web_img.png">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+
+    <h3>Hand-Drawn Image 1</h3>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/drawing1_cfg1.png">
+        <div class="img-caption">i_start = 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing1_cfg3.png">
+        <div class="img-caption">i_start = 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing1_cfg5.png">
+        <div class="img-caption">i_start = 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing1_cfg7.png">
+        <div class="img-caption">i_start = 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing1_cfg10.png">
+        <div class="img-caption">i_start = 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing1_cfg20.png">
+        <div class="img-caption">i_start = 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing1.png">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+
+    <h3>Hand-Drawn Image 2</h3>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/drawing2_cfg1.png">
+        <div class="img-caption">i_start = 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing2_cfg3.png">
+        <div class="img-caption">i_start = 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing2_cfg5.png">
+        <div class="img-caption">i_start = 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing2_cfg7.png">
+        <div class="img-caption">i_start = 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing2_cfg10.png">
+        <div class="img-caption">i_start = 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing2_cfg20.png">
+        <div class="img-caption">i_start = 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/drawing2.png">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── 1.7.2 ─── -->
+  <section class="section" id="parta172">
+    <div class="section-label">Part 1.7.2</div>
+    <h2>Inpainting</h2>
+    <p>
+      Inpainting fills a masked region of an image with plausible content. At each denoising step, pixels outside the mask(1-m) are <em>anchored</em> to the original image(x<sub>orig</sub>) with the appropriate noise level, while pixels inside the mask(m) are generated freely(x<sub>t</sub>). This implements the RePaint algorithm.
+    </p>
+
+    <div class="equation">
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <msub>
+          <mi>x</mi>
+          <mi>t</mi>
+        </msub>
+      
+        <mo>←</mo>
+      
+        <mi>m</mi>
+      
+        <mo>&#x22C5;</mo>
+      
+        <msub>
+          <mi>x</mi>
+          <mi>t</mi>
+        </msub>
+      
+        <mo>+</mo>
+      
+        <mrow>
+          <mo>(</mo>
+          <mn>1</mn>
+          <mo>−</mo>
+          <mi>m</mi>
+          <mo>)</mo>
+        </mrow>
+      
+        <mo>&#x22C5;</mo>
+      
+        <mrow>
+          <mi>forward</mi>
+          <mo>(</mo>
+      
+          <msub>
+            <mi>x</mi>
+            <mtext>orig</mtext>
+          </msub>
+      
+          <mo>,</mo>
+          <mi>t</mi>
+      
+          <mo>)</mo>
+        </mrow>
+      </math>
+    </div>
+
+    <h3>Campanile Inpainting</h3>
+    <div class="img-grid cols-4">
+      <div class="img-card">
+        <img src="assets/campanile.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_mask.png">
+        <div class="img-caption">Mask</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_replace.png">
+        <div class="img-caption">Hole to Fill</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_inpaint.png">
+        <div class="img-caption">Campanile Inpainted</div>
+      </div>
+    </div>
+
+    <h3>Custom Inpainting 1 (artemis)</h3>
+    <div class="img-grid cols-4">
+      <div class="img-card">
+        <img src="assets/artemis.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_mask.png">
+        <div class="img-caption">Mask</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_replace.png">
+        <div class="img-caption">Hole to Fill</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_inpaint.png">
+        <div class="img-caption">Artemis Inpainted</div>
+      </div>
+    </div>
+
+    <h3>Custom Inpainting 2 (alma)</h3>
+    <div class="img-grid cols-4">
+      <div class="img-card">
+        <img src="assets/alma.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma_mask.png">
+        <div class="img-caption">Mask</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma_replace.png">
+        <div class="img-caption">Hole to Fill</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma_inpaint.png">
+        <div class="img-caption">Artemis Inpainted</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>The inpainted regions blend naturally with the rest of the image. The model correctly reasons about context and the surroundings constrain what kind of content fills the hole, producing semantically coherent fills even for large masked regions. Multiple were needed to avoid artifacts since the model was not specifically trained for this task.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.7.3 ─── -->
+  <section class="section" id="parta173">
+    <div class="section-label">Part 1.7.3</div>
+    <h2>Text-Conditional Image-to-Image Translation</h2>
+    <p>
+      Extending SDEdit with a non-generic text condition allows us to stylistically transform an image. Instead of <em>"a high quality photo"</em>, we supply a descriptive or creative prompt, directing the denoising process toward a target visual style or subject.
+    </p>
+
+    <h3>Campanile → Statue of Liberty</h3>
+    <p class="ref-note">Prompt: "Statue of Liberty, realistic, detailed stone texture, standing on pedestal, dramatic sky, cinematic lighting, high detail"</p>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/campanile_liberty1.png">
+        <div class="img-caption">Noise Level 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_liberty3.png">
+        <div class="img-caption">Noise Level 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_liberty5.png">
+        <div class="img-caption">Noise Level 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_liberty7.png">
+        <div class="img-caption">Noise Level 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_liberty10.png">
+        <div class="img-caption">Noise Level 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile_liberty20.png">
+        <div class="img-caption">Noise Level 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/campanile.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+
+    <h3>Custom Image 1 → Ancient Wizard Tower</h3>
+    <p class="ref-note">Prompt: "ancient wizard tower, fantasy, glowing runes, misty environment, detailed textures"</p>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/artemis_tower1.png">
+        <div class="img-caption">Noise Level 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_tower3.png">
+        <div class="img-caption">Noise Level 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_tower5.png">
+        <div class="img-caption">Noise Level 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_tower7.png">
+        <div class="img-caption">Noise Level 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_tower10.png">
+        <div class="img-caption">Noise Level 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis_tower20.png">
+        <div class="img-caption">Noise Level 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/artemis.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+
+    <h3>Custom Image 2 → British Queen</h3>
+    <p class="ref-note">Prompt: "British queen on a royal throne, holding a sceptre, regal attire, crown, ornate palace setting, dramatic lighting, ultra detailed, photorealistic"</p>
+    <div class="img-grid cols-7">
+      <div class="img-card">
+        <img src="assets/alma_queen1.png">
+        <div class="img-caption">Noise Level 1</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma_queen3.png">
+        <div class="img-caption">Noise Level 3</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma_queen5.png">
+        <div class="img-caption">Noise Level 5</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma_queen7.png">
+        <div class="img-caption">Noise Level 7</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma_queen10.png">
+        <div class="img-caption">Noise Level 10</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma_queen20.png">
+        <div class="img-caption">Noise Level 20</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/alma.jpg">
+        <div class="img-caption">Original</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>At low noise levels, the original composition is preserved but texture/style shifts subtly toward the prompt. At higher noise levels the model takes creative liberties and reinterprets shapes and subjects according to the text. The tension between fidelity and creativity makes this a powerful, controllable editing tool.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.8 ─── -->
+  <section class="section" id="parta18">
+    <div class="section-label">Part 1.8</div>
+    <h2>Visual Anagrams</h2>
+    <p>
+      Visual anagrams are images that reveal different subjects depending on orientation. We achieve this by computing <em>two CFG noise estimates</em> simultaneously at each denoising step, one for the upright image and one for the flipped image, then averaging them after unflipping:
+    </p>
+
+    <div class="algo-block">
+      <div class="algo-title">Algorithm: Visual Anagram (Flip)</div>
+      <code>
+        <span class="kw">ε₁</span> = CFG of UNet(<span class="var">xₜ</span>, t, <span class="var">p₁</span>) &nbsp;&nbsp;<span class="cmt">// upright condition</span><br>
+        <span class="kw">ε₂</span> = flip(CFG of UNet(flip(<span class="var">xₜ</span>), t, <span class="var">p₂</span>)) &nbsp;&nbsp;<span class="cmt">// flipped condition</span><br>
+        <span class="kw">ε</span> = (<span class="kw">ε₁</span> + <span class="kw">ε₂</span>) / 2 &nbsp;&nbsp;<span class="cmt">// averaged noise estimate</span>
+      </code>
+    </div>
+
+    <h3>Illusion 1: Mountain Range ↔ Sleeping Bear</h3>
+    <p class="ref-note">p₁ = "an oil painting of a mountain range"</p>
+    <p class="ref-note">p₂ = "an oil painting of a sleeping bear"</p>
+
+    <div class="img-grid cols-2">
+      <div class="img-card">
+        <img src="assets/bear_mountain1.png">
+        <div class="img-caption">Upright - Mountain Range</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/bear_mountain2.png">
+        <div class="img-caption">Flipped - Sleeping Bear</div>
+      </div>
+    </div>
+
+    <h3>Illusion 2: Owl ↔ Sailing Ship</h3>
+    <p class="ref-note">p₁ = "a pencil sketch of an owl perched on a branch"</p>
+    <p class="ref-note">p₂ = "a pencil sketch of a sailing ship on the ocean"</p>
+
+    <div class="img-grid cols-2">
+      <div class="img-card">
+        <img src="assets/owl_ship1.png">
+        <div class="img-caption">Upright - Owl on branch</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/owl_ship2.png">
+        <div class="img-caption">Flipped - Sailing ship</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>The visual anagram technique works because both noise estimates compete to shape the same frequency-rich image structure. The model converges on compositions that simultaneously satisfy both orientations by exploiting ambiguous shapes that read differently when rotated. Multiple generation attempts were needed to find a particularly convincing result.</p>
+    </div>
+  </section>
+
+  <!-- ─── 1.9 ─── -->
+  <section class="section" id="parta19">
+    <div class="section-label">Part 1.9</div>
+    <h2>Hybrid Images</h2>
+    <p>
+      Hybrid images encode two different subjects into distinct spatial frequency bands. One subject dominates at low frequencies (visible from afar) and another at high frequencies (visible up close). We implement this via <em>Factorized Diffusion</em>: two CFG noise estimates are combined by splitting their frequency content.
+    </p>
+
+    <div class="algo-block">
+      <div class="algo-title">Algorithm: Hybrid Image</div>
+      <code>
+        <span class="kw">ε₁</span> = CFG of UNet(<span class="var">xₜ</span>, t, <span class="var">p₁</span>) &nbsp;&nbsp;<span class="cmt">// low-freq condition</span><br>
+        <span class="kw">ε₂</span> = CFG of UNet(<span class="var">xₜ</span>, t, <span class="var">p₂</span>) &nbsp;&nbsp;<span class="cmt">// high-freq condition</span><br>
+        <span class="kw">ε</span> = f_lowpass(<span class="kw">ε₁</span>) + f_highpass(<span class="kw">ε₂</span>) &nbsp;&nbsp;<span class="cmt">// gaussian blur, σ=2, k=33</span>
+      </code>
+    </div>
+
+    <h3>Hybrid Image 1: Skull ↔ Forest</h3>
+    <p class="ref-note">p₁ = "a lithograph of a human skull" (low freq)</p>
+    <p class="ref-note">p₂ = "a lithograph of a forest of pine trees" (high freq)</p>
+    <div class="img-grid cols-2-asym">
+      <div class="img-card small">
+        <img src="assets/skull_trees2.png">
+        <div class="img-caption">Downsampled(Far) - Skull</div>
+      </div>
+      <div class="img-card large">
+        <img src="assets/skull_trees1.png">
+        <div class="img-caption">Upsampled(Near) - Pine Trees</div>
+      </div>
+    </div>
+
+    <h3>Hybrid Image 2: Yin-Yang ↔ Rome</h3>
+    <p class="ref-note">p₁ = "a photo of a yin yang" (low freq)</p>
+    <p class="ref-note">p₂ = "a photo of Rome" (high freq)</p>
+    <div class="img-grid cols-2-asym">
+      <div class="img-card small">
+        <img src="assets/yinyang_rome2.png">
+        <div class="img-caption">Downsampled(Far) - Yin Yang</div>
+      </div>
+      <div class="img-card large">
+        <img src="assets/yinyang_rome1.png">
+        <div class="img-caption">Upsampled(Near) - City of Rome</div>
+      </div>
+    </div>
+
+    <div class="obs-box">
+      <div class="obs-label">📝 Observation</div>
+      <p>The hybrid images exploit the visual system's multi-scale processing: squinting or viewing from a distance smooths out high-frequency details, revealing only the low-frequency subject. Up close, the high-frequency textures and edges dominate perception. The technique works best with prompts that produce complementary spatial statistics (e.g., a bold geometric form vs. a textured scene).</p>
+    </div>
+  </section>
+
+  <!-- ─── PART B HEADER ─── -->
+  <section class="section" id="partb">
+    <div class="section-label">Part B</div>
+    <h2>Flow Matching from Scratch!</h2>
+    <p>
+      
+    </p>
+  </section>
+
+  <!-- ─── PART B PLACEHOLDER ───
+  <section class="section" id="partb">
+    <div class="part-b-placeholder">
+      <div class="coming-soon">Coming Soon</div>
+      <h2>Part B</h2>
+      <p>Results and analysis for Part B will be posted here once completed.</p>
+    </div>
+  </section> -->
+
+  
+
+
+</main>
+
+<!-- Footer -->
+<footer style="
+  border-top: 1px solid var(--border);
+  padding: 40px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+">
+  ash2285 &nbsp;·&nbsp; COMS 4732W Computer Vision 2 &nbsp;·&nbsp; Homework 5 (Part A &amp; Part B) &nbsp;·&nbsp; Columbia University
+</footer>
+
+<script>
+  (function () {
+    const body = document.body;
+    const toggle = document.getElementById('drawerToggle');
+    const drawer = document.getElementById('drawerNav');
+    const overlay = document.getElementById('drawerOverlay');
+    const links = drawer ? drawer.querySelectorAll('a') : [];
+
+    if (!toggle || !drawer || !overlay) return;
+
+    const setOpen = (open) => {
+      body.classList.toggle('drawer-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+
+    toggle.addEventListener('click', () => {
+      setOpen(!body.classList.contains('drawer-open'));
+    });
+
+    overlay.addEventListener('click', () => setOpen(false));
+
+    links.forEach((link) => {
+      link.addEventListener('click', () => setOpen(false));
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
+
+</body>
+</html>
