@@ -534,6 +534,7 @@
     color: var(--text-dim);
     text-transform: uppercase;
     text-align: center;
+    vertical-align: text-bottom;
     overflow-wrap: anywhere;
   }
 
@@ -970,6 +971,12 @@
     right: 15%;
   }
 
+  .item-4 {
+    top: 70%;
+    left: 10%;
+    scale: 3.2;
+  }
+
   /* Make them feel subtle in background */
   .header-interactive .img-card {
     transform: scale(0.9);
@@ -1033,6 +1040,12 @@
       <div class="img-caption">
         <span class="caption-front">City of Rome</span>
         <span class="caption-back">Yin Yang</span>
+      </div>
+    </div>
+
+    <div class="img-card bg-item item-4">
+      <div class="img-wrapper">
+        <img src="assets/class_conditioned_sample10.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
       </div>
     </div>
 
@@ -1103,10 +1116,9 @@
 </nav>
 
 <main>
-
   <!-- ─── PART A HEADER ─── -->
   <section class="section" id="parta">
-    <div class="section-label">Part A</div>
+    <div class="section-label" style="font-size: larger;">Part A</div>
     <h2>The Power of Diffusion Models!</h2>
     <p>
       This project explores the practical and creative potential of state-of-the-art diffusion models using the DeepFloyd IF framework. We implemented key components of the diffusion pipeline, including the forward noise process and custom iterative denoising loops, progressing from classical methods to learned denoising with a pretrained UNet. Image quality was further enhanced using Classifier-Free Guidance (CFG), enabling stronger alignment between generated outputs and text prompts.
@@ -1185,7 +1197,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>With <strong>steps=20</strong>, images are plausible but can appear slightly blurry or over-smoothed. Increasing to <strong>steps=100</strong> yields sharper textures and better prompt alignment.</p>
     </div>
   </section>
@@ -1284,7 +1296,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>At t=250, the Campanile silhouette remains clearly visible with some color noise. At t=500, the structure is blurred and partially overwhelmed by noise. At t=750, the original image is nearly indistinguishable. The forward process has almost fully destroyed the signal, leaving only spectral traces.</p>
     </div>
   </section>
@@ -1328,7 +1340,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>Gaussian blur removes high-frequency noise but produces a blurry, washed-out result at all noise levels. At t=500 and t=750, the "denoised" images are practically unrecognizable. This demonstrates the fundamental limitation of frequency-domain methods that lack semantic priors.</p>
     </div>
   </section>
@@ -1432,7 +1444,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>At t=250, one-step denoising nearly recovers the original image. At t=500 the result is still recognizable but shows hallucinated details. At t=750, the single-step estimate diverges significantly and the problem is too ill-posed for a single network pass to solve reliably. This motivates <em>iterative</em> denoising.</p>
     </div>
   </section>
@@ -1598,7 +1610,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>Iterative denoising dramatically outperforms both single-step and Gaussian methods. The gradual refinement allows the model to progressively hallucinate coherent structure. The result is sharp, semantically meaningful, and closely resembles the original.</p>
     </div>
   </section>
@@ -1637,7 +1649,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>Without classifier-free guidance, the null-conditioned generations are valid images but lack sharpness and coherence. Some samples are clearly recognizable (portraits, landscapes) while others are semi-abstract. Quality will be substantially improved in Part 1.6 with CFG.</p>
     </div>
   </section>
@@ -1715,7 +1727,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>The improvement with CFG is striking. Images are sharper, better-lit, and more semantically coherent. The trade-off is reduced diversity. All samples have a more "photographic" quality rather than the varied, sometimes abstract outputs of unconditioned sampling.</p>
     </div>
   </section>
@@ -1829,7 +1841,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>At i_start=1-3, the edit is minimal with essentially no change. As i_start increases toward 20, the model gains freedom to reinterpret the content: colors shift, textures transform, and at i_start=20 the result may diverge significantly from the original while retaining the broad compositional structure.</p>
     </div>
   </section>
@@ -2076,7 +2088,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>The inpainted regions blend naturally with the rest of the image. The model correctly reasons about context and the surroundings constrain what kind of content fills the hole, producing semantically coherent fills even for large masked regions. Multiple were needed to avoid artifacts since the model was not specifically trained for this task.</p>
     </div>
   </section>
@@ -2210,7 +2222,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>At low noise levels, the original composition is preserved but texture/style shifts subtly toward the prompt. At higher noise levels the model takes creative liberties and reinterprets shapes and subjects according to the text. The tension between fidelity and creativity makes this a powerful, controllable editing tool.</p>
     </div>
   </section>
@@ -2267,7 +2279,7 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>The visual anagram technique works because both noise estimates compete to shape the same frequency-rich image structure. The model converges on compositions that simultaneously satisfy both orientations by exploiting ambiguous shapes that read differently when rotated. Multiple generation attempts were needed to find a particularly convincing result.</p>
     </div>
   </section>
@@ -2320,17 +2332,17 @@
     </div>
 
     <div class="obs-box">
-      <div class="obs-label">📝 Observation</div>
+      <div class="obs-label">Observation</div>
       <p>The hybrid images exploit the visual system's multi-scale processing: squinting or viewing from a distance smooths out high-frequency details, revealing only the low-frequency subject. Up close, the high-frequency textures and edges dominate perception. The technique works best with prompts that produce complementary spatial statistics (e.g., a bold geometric form vs. a textured scene).</p>
     </div>
   </section>
 
   <!-- ─── PART B HEADER ─── -->
   <section class="section" id="partb">
-    <div class="section-label">Part B</div>
+    <div class="section-label" style="font-size: larger;">Part B</div>
     <h2>Flow Matching from Scratch!</h2>
     <p>
-      
+      In this part, we build and train a UNet to create our own Flow Matching model. We will implement the training loop, loss function, and noise schedule, and train on a dataset of our choice. The trained model will then be used to generate samples and analyze the results.
     </p>
   </section>
 
@@ -2343,7 +2355,370 @@
     </div>
   </section> -->
 
-  
+  <section class="section" id="partb1">
+    <div class="section-label">Part 1</div>
+    <h2>Training a Single-Step Denoising UNet</h2>
+    <p>
+      We use <strong>UNet</strong>, to build a simple one-step denoiser. Given a noisy image z, we aim to train a denoiser D<sub>θ</sub>such that it maps z to a clean image x. To do so, we can optimize over an L2 loss:
+    </p>
+    <div class="equation">
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <mi>L</mi>
+        <mo>=</mo>
+
+        <!-- Expectation with subscript -->
+        <msub>
+          <mi>&#x1D53C;</mi>
+          <mrow>
+            <mi>z</mi>
+            <mo>,</mo>
+            <mi>x</mi>
+          </mrow>
+        </msub>
+
+        <!-- Norm squared -->
+        <msup>
+          <mrow>
+            <mo>&#x2225;</mo>
+            <mrow>
+              <msub>
+                <mi>D</mi>
+                <mi>&#x03B8;</mi>
+              </msub>
+              <mo>(</mo>
+              <mi>z</mi>
+              <mo>)</mo>
+              <mo>-</mo>
+              <mi>x</mi>
+            </mrow>
+            <mo>&#x2225;</mo>
+          </mrow>
+          <mn>2</mn>
+        </msup>
+      </math>
+    </div>
+  </section>
+
+  <!-- ─── 1.1 ─── -->
+  <section class="section" id="partb11">
+    <div class="section-label">Part 1.1</div>
+    <h2>Implementing the UNet</h2>
+    <p>
+      In this project, we implement the denoiser as a <a href="https://arxiv.org/abs/1505.04597" target="_blank">UNet</a>. It consists of a few downsampling and upsampling blocks with skip connections as shown in the diagram below. The UNet takes a noisy image as input and outputs a denoised image of the same size.
+    </p>
+
+    <div class="img-card">
+      <img src="assets/unet_arch.png" style="aspect-ratio: auto; object-fit: fill;">
+      <div class="img-caption">Unconditional UNet</div>
+    </div>
+    <br><br>
+    <div class="img-card">
+      <img src="assets/blocks.png" style="aspect-ratio: auto; object-fit: fill;">
+      <div class="img-caption">Standard UNet Operations</div>
+    </div>
+  </section>
+
+  <!-- ─── 1.2 ─── -->
+  <section class="section" id="partb12">
+    <div class="section-label">Part 1.2</div>
+    <h2>Using the UNet to Train a Denoiser</h2>
+    <p>
+      To train our denoiser, we need to generate training data pairs of (z, x), where each x is a clean MNIST digit. For each training batch, we can generate noisy z from clean x. One such way is the following noising process:
+    </p>
+    <div class="equation">
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <mi>z</mi>
+        <mo>=</mo>
+        <mi>x</mi>
+        <mo>+</mo>
+        <mi>σ</mi>
+        <mo>&#x22C5;</mo>
+        <mi>ϵ</mi>
+        <mspace></mspace>
+        <mo>where</mo>
+        <mi>ϵ</mi>
+        <mo>∼</mo>
+        <mi>𝒩</mi>
+        <mo>(</mo>
+        <mn>0</mn>
+        <mo>,</mo>
+        <mn>1</mn>
+        <mo>)</mo>
+      </math>
+    </div>
+
+    <p>
+      We visualize the different noising processes over various values of σ below. As σ increases, the noisy image z becomes more corrupted and harder to denoise, which makes the training task more challenging.
+    </p>
+
+    <div class="img-card">
+      <img src="assets/noising_process.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Unconditional UNet</div>
+    </div>
+  </section>
+
+  <!-- ─── 1.2.1 ─── -->
+  <section class="section" id="partb121">
+    <div class="section-label">Part 1.2.1</div>
+    <h2>Training</h2>
+    <p>
+      <strong>Objective:</strong> Train a denoiser to denoise noisy image z with σ = 5 applied to a clean image x.
+      <br>
+      <strong>Dataset & Preprocessing:</strong> We use the MNIST dataset for training. We shuffle the training set and shuffle the dataset.
+    </p>
+
+    <table class="params-table">
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Learning Rate</td><td>1e-4</td></tr>
+        <tr><td>Batch Size</td><td>256</td></tr>
+        <tr><td>Number of Epochs</td><td>5</td></tr>
+        <tr><td>Noise Level (σ)</td><td>0.5</td></tr>
+        <tr><td>Hidden Dimension</td><td>128</td></tr>
+        <tr><td>Optimizer</td><td>Adam</td></tr>
+      </tbody>
+    </table>
+
+    <div class="img-card">
+      <img src="assets/training_curve.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Training Curve</div>
+    </div>
+    <br><br>
+    <div class="img-card">
+      <img src="assets/sample_results.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Sample Results</div>
+    </div>
+    <br><br>
+    <p>
+      Visualizations of the denoised results on the test set after the first epoch and after the final epoch are shown above. The model learns to effectively remove noise and recover the original digit structure, with significant improvements observed after training.
+    </p>
+
+  </section>
+
+  <!-- ─── 1.2.2 ─── -->
+  <section class="section" id="partb122">
+    <div class="section-label">Part 1.2.2</div>
+    <h2>Out-of-Distribution Testing</h2>
+    <p>
+      Since our model was trained on σ = 5, we test our denoiser on varying levels of noise for the same image. The results are shown below. As expected, the model performs decently well at lower noise levels, performing best at the noise level it was trained on (σ = 5) and degrades gracefully as noise increases, demonstrating some generalization to out-of-distribution noise levels.
+    </p>
+
+    <div class="img-card">
+      <img src="assets/ood.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Out-of-Distribution Results</div>
+    </div>
+
+  </section>
+
+  <!-- ─── 1.2.3 ─── -->
+  <section class="section" id="partb123">
+    <div class="section-label">Part 1.2.3</div>
+    <h2>Denoising Pure Noise</h2>
+    <p>
+      To make denoising a generative task, we'd like to be able to denoise pure, random Gaussian noise. We can think of this as starting with a blank canvas z = ϵ where ϵ ~ 𝒩(0, I) and denoising it to get a clean image x. 
+      <br>
+      We repeat the same training process as in part 1.2.1, but input pure noise z = ϵ ~ 𝒩(0, I) and denoise it for 5 epochs.
+    </p>
+
+    <div class="img-card">
+      <img src="assets/training_curve_pure_noise.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Training Curve - Pure Noise</div>
+    </div>
+    <br><br>
+    <div class="img-card">
+      <img src="assets/sample_results_pure_noise.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Sample Results - Pure Noise</div>
+    </div>
+    <br><br>
+    <p>
+      <div class="obs-box">
+        <div class="obs-label" style="font-size: medium;">Observation</div>
+        <p>Outputs tend to appear as blurry, averaged digit-like shapes or faint patterns that loosely resemble multiple digits at once with a bias toward common shapes (e.g., rounded structures like 0, 3, 8).</p>
+        <br>
+        <div class="obs-label" style="font-size: medium;">Explanation</div>
+        <p>This behavior occurs because the model is trained using an MSE (L2) loss, which encourages it to predict the average of all possible valid outputs given the input. When the input is pure noise, there is no information about which digit the image should be. As a result, the model cannot map the noise to a specific digit (e.g., “this is a 7”). Instead, it learns to output something close to the mean of the training distribution.</p>
+      </div>
+    </p>
+
+  </section>
+
+  <!-- ─── 2 ─── -->
+  <section class="section" id="partb2">
+    <div class="section-label">Part 2</div>
+    <h2>Training a Flow Matching Model</h2>
+    <p>
+      We saw that one-step denoising does not work well for generative tasks. Instead, we need to iteratively denoise the image, and we will do so with <a href="https://arxiv.org/abs/2210.02747">flow matching</a>. Here, we will iteratively denoise an image by training a UNet model to predict the 'flow' from our noisy data to clean data. We do so by the following steps:
+      <ol>
+        <li>Sample a pure noise image x<sub>0</sub> ~ 𝒩(0, I)</li>
+        <li>Define intermediate noisy samples through linear interpolation: x<sub>t</sub> = (1 - t)x<sub>0</sub> + tx, where t ~ U[0, 1].</li>
+        <li>Finally, generate a realistic image x<sub>1</sub></li>
+        <li>Train the UNet D<sub>θ</sub> to predict the flow from z to x using the loss: L = E ||D<sub>θ</sub>(x<sub>t</sub>, t) - (x<sub>1</sub> - x<sub>0</sub>)||²</li>
+      </ol>
+      <br>
+    </p>
+  </section>
+
+  <!-- ─── 2.1 ─── -->
+  <section class="section" id="partb21">
+    <div class="section-label">Part 2.1</div>
+    <h2>Adding Time Conditioning to UNet</h2>
+    <p>
+      We inject scalar t into our UNet model to condition it on time by introducing a new operator called FCBlock (fully-connected block) which is used to inject the conditioning signal into the UNet:
+    </p>
+    <div class="img-card">
+      <img src="assets/conditional_arch_fm.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Conditional Architecture for Flow Matching</div>
+    </div>
+  </section>
+
+  <!-- ─── 2.2 ─── -->
+  <section class="section" id="partb22">
+    <div class="section-label">Part 2.2</div>
+    <h2>Training the Flow Matching Model</h2>
+    <p>
+      <strong>Objective:</strong> Train a time-conditioned UNet model to predict the flow at t given a noisy image x<sub>t</sub>.
+      <br>
+      <strong>Dataset & Preprocessing:</strong> We use the MNIST dataset for training. We shuffle the training set.
+    </p>
+
+    <table class="params-table">
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Learning Rate</td><td>1e-2</td></tr>
+        <tr><td>Batch Size</td><td>64</td></tr>
+        <tr><td>Number of Epochs</td><td>5</td></tr>
+        <tr><td>Hidden Dimension</td><td>64</td></tr>
+        <tr><td>Optimizer</td><td>Adam</td></tr>
+        <tr><td>Scheduler Gamma</td><td>0.1</td></tr>
+      </tbody>
+    </table>
+
+    <div class="img-card">
+      <img src="assets/training_curve_fm.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Training Curve</div>
+    </div>
+    <br><br>
+  </section>
+
+  <!-- ─── 2.3 ─── -->
+  <section class="section" id="partb23">
+    <div class="section-label">Part 2.3</div>
+    <h2>Sampling from the UNet</h2>
+    <p>
+      The images below show the results of sampling from our trained UNet model. We start with pure noise and iteratively apply the flow predicted by our UNet to generate a clean image. The results would not be perfect, but legible digits should emerge from the noise, demonstrating that our model has learned to capture the underlying data distribution and can generate realistic samples through iterative denoising.
+    </p>
+
+    <div class="img-grid cols-3">
+      <div class="img-card">
+        <img src="assets/time_conditioned_sample1.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 1)</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/time_conditioned_sample5.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 5)</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/time_conditioned_sample10.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 10)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── 2.4 ─── -->
+  <section class="section" id="partb24">
+    <div class="section-label">Part 2.4</div>
+    <h2>Adding Class-Conditioning to UNet</h2>
+    <p>
+      To make the results better and give us more control for image generation, we can also optionally condition our UNet on the class of the digit 0-9. This will require adding 2 more FCBlocks to our UNet but for class-conditioning vector c, we make it a one-hot vector instead of a single scalar.
+    </p>
+  </section>
+
+  <!-- ─── 2.2 ─── -->
+  <section class="section" id="partb25">
+    <div class="section-label">Part 2.5</div>
+    <h2>Training the Class-Conditioned UNet</h2>
+    <p>
+      Training for this section will be the same as time-only, with the only difference being the conditioning vector c and doing unconditional generation periodically.
+    </p>
+
+    <table class="params-table">
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Learning Rate</td><td>1e-2</td></tr>
+        <tr><td>Batch Size</td><td>64</td></tr>
+        <tr><td>Number of Epochs</td><td>5</td></tr>
+        <tr><td>Hidden Dimension</td><td>64</td></tr>
+        <tr><td>Optimizer</td><td>Adam</td></tr>
+        <tr><td>Scheduler Gamma</td><td>0.1</td></tr>
+      </tbody>
+    </table>
+
+    <div class="img-card">
+      <img src="assets/training_curve_cc.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+      <div class="img-caption">Training Curve</div>
+    </div>
+    <br><br>
+  </section>
+
+  <!-- ─── 2.6 ─── -->
+  <section class="section" id="partb26">
+    <div class="section-label">Part 2.6</div>
+    <h2>Sampling from the UNet</h2>
+    <p>
+      The images below show the results of sampling from our trained UNet model. We start with pure noise and iteratively apply the flow predicted by our UNet to generate a clean image. The results should show clearer, more distinct digits compared to the time-only conditioned model, demonstrating that class-conditioning has improved the model's ability to generate specific digit classes and has enhanced overall sample quality.
+    </p>
+
+    <div class="img-grid cols-3">
+      <div class="img-card">
+        <img src="assets/class_conditioned_sample1.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 1)</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/class_conditioned_sample5.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 5)</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/class_conditioned_sample10.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 10)</div>
+      </div>
+    </div>
+    <br><br>
+
+    <div class="obs-box">
+      <div class="obs-label" style="font-size: medium;">Q: Can we get rid of the annoying learning rate scheduling?</div>
+      <p>Yes! We can reduce the learning rate and train for more epochs to achieve similar results without scheduling. The learning rate scheduler was used here to speed up training and convergence, but with a smaller learning rate and more epochs, we can achieve comparable performance without it. The results of training with a smaller learning rate(1e-3) and no scheduler are shown below, and they demonstrate that the model can still learn effectively, albeit with a longer training time(20 epochs).</p>
+    </div>
+    <div class="img-grid cols-3">
+      <div class="img-card">
+        <img src="assets/class_conditioned_nosched_sample1.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 1)</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/class_conditioned_nosched_sample5.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 5)</div>
+      </div>
+      <div class="img-card">
+        <img src="assets/class_conditioned_nosched_sample20.png" style="aspect-ratio: auto; object-fit: fill; background: white;">
+        <div class="img-caption">Results (Epoch 20)</div>
+      </div>
+    </div>
+
+  </section>
 
 
 </main>
